@@ -1,23 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ShoNS.Array;
+﻿using ShoNS.Array;
 using Rhino.Geometry;
 using System.IO;
 using System.Reflection;
-using Gurobi;
 using Minilla3D.Elements;
 using Mothra.UI;
 namespace mikity.ghComponents
 {
 
-    /// <summary>
-    /// Construct a point array using isoparametric shape functions.
-    /// </summary>
-    public class Mothra : Grasshopper.Kernel.GH_Component
-    {
-        Transform[] XZ;
+
+    //public class Mothra : Grasshopper.Kernel.GH_Component
+    //{
+/*        Transform[] XZ;
         Transform[] XZ2;
         ControlBox myControlBox = new ControlBox();
         
@@ -33,7 +26,7 @@ namespace mikity.ghComponents
         List<int> boundaryIndex=null;
         bool __update = false;
         System.Windows.Forms.Timer timer=null;
-        //List<Minilla3D.Elements.managedElement> elemList = new List<Minilla3D.Elements.managedElement>();
+ * */
 
         /*        protected override System.Drawing.Bitmap Icon
                 {
@@ -50,7 +43,7 @@ namespace mikity.ghComponents
                     }
                 }
         */
-        public Mothra()
+        /*public Mothra()
             : base("Mothra", "Mothra", "Mothra", "Kapybara3D", "Computation")
         {
         }
@@ -61,23 +54,16 @@ namespace mikity.ghComponents
 
         protected override void RegisterInputParams(Grasshopper.Kernel.GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Surface", "S", "inputSurface", Grasshopper.Kernel.GH_ParamAccess.item);
-            pManager.AddBooleanParameter("Boundary", "b", "Boundary", Grasshopper.Kernel.GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Surface", "S", "inputSurface", Grasshopper.Kernel.GH_ParamAccess.item);
+            //pManager.AddBooleanParameter("Boundary", "b", "Boundary", Grasshopper.Kernel.GH_ParamAccess.item);
         }
 
         protected override void RegisterOutputParams(Grasshopper.Kernel.GH_Component.GH_OutputParamManager pManager)
         {
         }
-        void timer_Tick(object sender, EventArgs e)
-        {
-        }
         public override void AddedToDocument(Grasshopper.Kernel.GH_Document document)
         {
             base.AddedToDocument(document);
-            timer = new System.Windows.Forms.Timer();
-            timer.Tick += timer_Tick;
-            timer.Enabled = true;
-            timer.Interval = 30;
             myControlBox.Show();
             myControlBox.setCompute(() =>
             {
@@ -89,7 +75,8 @@ namespace mikity.ghComponents
                 }
             });
         }
-        bool isBoundary(int n)
+*/
+        /*bool isBoundary(int n)
         {
             for (int i = 0; i < boundaryIndex.Count(); i++)
             {
@@ -99,9 +86,9 @@ namespace mikity.ghComponents
                 }
             }
             return false;
-        }
-        public Rhino.Geometry.Plane[] cuttingPlane=new Plane[4];
-        public void update()
+        }*/
+        //public Rhino.Geometry.Plane[] cuttingPlane=new Plane[4];
+        /*public void update()
         {
             Nurbs2x(airyNurbs[0], x);
             double norm = 0;
@@ -598,10 +585,6 @@ namespace mikity.ghComponents
                         model.Set(GRB.DoubleAttr.UB, vars, ub);
                         model.Set(GRB.DoubleAttr.LB, vars, lb);
                         model.Optimize();
-                        /*for (int j = 0; j < nU * nV; j++)
-                        {
-                            x[j, 2] = vars[j].Get(GRB.DoubleAttr.X);
-                        }*/
                         var f=model.Get(GRB.DoubleAttr.X, vars);
                         for (int j = 0; j < nU * nV; j++)
                         {
@@ -794,7 +777,7 @@ namespace mikity.ghComponents
                     double Fy = F[i * 3 + 1, 0];
                     double Fz = F[i * 3 + 2, 0];
 
-                    if (/*!boundary&&*/(Fx * Fx + Fy * Fy + Fz * Fz) >0.01/* 0.01*/)
+                    if ((Fx * Fx + Fy * Fy + Fz * Fz) >0.01)
                     {
                         F[i * 3 + 0, 0] = Fx;
                         F[i * 3 + 1, 0] = Fy;
@@ -914,9 +897,10 @@ namespace mikity.ghComponents
             }
 
         }
-        public override void BakeGeometry(Rhino.RhinoDoc doc, Rhino.DocObjects.ObjectAttributes att, List<Guid> obj_ids)
-        {
-            Rhino.DocObjects.ObjectAttributes a2 = att.Duplicate();
+         * */
+        //public override void BakeGeometry(Rhino.RhinoDoc doc, Rhino.DocObjects.ObjectAttributes att, List<Guid> obj_ids)
+        //{
+/*            Rhino.DocObjects.ObjectAttributes a2 = att.Duplicate();
             a2.LayerIndex = 1;
             Rhino.DocObjects.ObjectAttributes a3 = att.Duplicate();
             a3.LayerIndex = 2;
@@ -930,14 +914,14 @@ namespace mikity.ghComponents
                 obj_ids.Add(id);
                 Guid id2 = doc.Objects.AddSurface(oN, a3);
                 obj_ids.Add(id2);            
-            }
-        }
-        public override void DrawViewportWires(Grasshopper.Kernel.IGH_PreviewArgs args)
-        {
-            if (Hidden)
+            }*/
+        //}
+        //public override void DrawViewportWires(Grasshopper.Kernel.IGH_PreviewArgs args)
+        //{
+            /*if (Hidden)
             {
                 return;
-            }
+            }*/
             /*for (int i = 0; i < 4; i++)
             {
                 double[] f = null;
@@ -955,6 +939,7 @@ namespace mikity.ghComponents
                     args.Display.DrawLine(P4, P1, System.Drawing.Color.LightCoral, 2);
                 }
             }*/
+            /*
             if (boundary)
             {
                 for (int s = (nU - 2) * (nV - 2) - 1; s >= 0; s--)
@@ -997,14 +982,6 @@ namespace mikity.ghComponents
                 var v=myMasonry[s];
                 v.setupNodesFromList(x);
                 v.computeGlobalCoord();
-                /*foreach (var e in v.edgeList)
-                {
-                    for (int i = 0; i < e.nIntPoint; i++)
-                    {
-                        double[] node2 = e.getIntPoint(i);
-                        args.Display.Draw2dText(e.intP[i].tension.ToString("00.00"), System.Drawing.Color.White, new Rhino.Geometry.Point3d(node2[0], node2[1], node2[2]), true);
-                    }
-                }*/
 
                 foreach (var e in v.elemList)
                 {
@@ -1106,7 +1083,7 @@ namespace mikity.ghComponents
                     }
                 }
             }
-
+            */
 /*            for (int s = (nU - 2) * (nV - 2) - 1; s >= 0; s--)
             {
                 Nurbs2x(outputNurbs[s], x);
@@ -1152,12 +1129,12 @@ namespace mikity.ghComponents
                         args.Display.DrawArrow(new Line(x[i, 0], x[i, 1], x[i, 2], x[i, 0] + Fx, x[i, 1] + Fy, x[i, 2] + Fz), System.Drawing.Color.Orange);
                 }
             }*/
-            base.DrawViewportWires(args);
-        }
-        bool boundary = false;
-        protected override void SolveInstance(Grasshopper.Kernel.IGH_DataAccess DA)
-        {
-            Object inputGeometry = null;
+            //base.DrawViewportWires(args);
+        //}
+        //bool boundary = false;
+        //protected override void SolveInstance(Grasshopper.Kernel.IGH_DataAccess DA)
+        //{
+/*            Object inputGeometry = null;
             if (!DA.GetData(0, ref inputGeometry)) { return; }
             if (!DA.GetData(1, ref boundary)) { boundary = false; }
             if (inputGeometry is Grasshopper.Kernel.Types.GH_Surface)
@@ -1165,8 +1142,9 @@ namespace mikity.ghComponents
                 inputNurbs = (inputGeometry as Grasshopper.Kernel.Types.GH_Surface).Value.Surfaces[0].ToNurbsSurface();
                 initialized=initializeNurbs(inputNurbs);
             }
-            __update = true;
-        }
+            __update = true;}*/
+        //}
+        /*
         void createAiryInitialSurface(Rhino.Geometry.NurbsSurface S)
         {
             //find the center point
@@ -1256,11 +1234,6 @@ namespace mikity.ghComponents
                     boundaryIndex.Add(f);
                 }
             }
-            /*boundaryIndex.Add(0);
-            boundaryIndex.Add(nU-1);
-            boundaryIndex.Add(nU * nV - 1-nU+1);
-            boundaryIndex.Add(nU * nV - 1);
-            */
             for (int s = 0;s<(nU-2)*(nV-2);s++)
             {
                 airyNurbs[s]=S.Duplicate() as Rhino.Geometry.NurbsSurface;
@@ -1453,7 +1426,7 @@ namespace mikity.ghComponents
                     }
                 }
             }
-        }
-    }
+        }*/
+    //}
 
 }
