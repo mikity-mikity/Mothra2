@@ -12,7 +12,7 @@ namespace mikity.ghComponents
         {
             Rhino.DocObjects.ObjectAttributes a2 = att.Duplicate();
             a2.LayerIndex = 1;
-            Guid id = doc.Objects.AddSurface(null, a2);
+            Guid id = doc.Objects.AddMesh(gmesh, a2);
             obj_ids.Add(id);
         }
     }

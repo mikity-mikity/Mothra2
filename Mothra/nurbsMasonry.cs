@@ -20,6 +20,9 @@ namespace mikity.ghComponents
         List<Curve> c;
         List<Point3d> d;
         List<Point3d> d2;
+        List<Line> f;
+        List<Point3d> g;
+        List<Line>[] boundaries;
         Rhino.Geometry.Mesh gmesh = new Rhino.Geometry.Mesh();
         private void init()
         {
@@ -29,6 +32,9 @@ namespace mikity.ghComponents
             c = new List<Curve>();
             d = new List<Point3d>();
             d2 = new List<Point3d>();
+            f = new List<Line>();
+            g = new List<Point3d>();
+            boundaries = new List<Line>[10];
         }
         public Mothra2()
             : base("Mothra2", "Mothra2", "Mothra2", "Kapybara3D", "Computation")
@@ -115,13 +121,13 @@ namespace mikity.ghComponents
                     }
                 }
             }
-            InputGeometry input = new InputGeometry(12);
+            InputGeometry input = new InputGeometry(1000);
+            int tmpN = 0;
+            int N = 0;
             foreach (var loop in face.Loops)
             {
                 var _edges3D = loop.To3dCurve();
                 var _edges2D = loop.To2dCurve();
-                int tmpN = 0;
-                int N = 0;
                 if (_edges3D is PolyCurve)
                 {
                     var edges3D = _edges3D as PolyCurve;
@@ -143,13 +149,20 @@ namespace mikity.ghComponents
                             {
                                 input.AddPoint(P2D.X, P2D.Y);
                                 N++;
-                                input.AddSegment(N - 1, tmpN);
+                                input.AddSegment(N - 1, tmpN,s);
                             }
                             else if(_t<49)
                             {
-                                input.AddPoint(P2D.X, P2D.Y);
+                                if (_t == 0)
+                                {
+                                    input.AddPoint(P2D.X, P2D.Y);
+                                }
+                                else
+                                {
+                                    input.AddPoint(P2D.X, P2D.Y);
+                                }
                                 N++;
-                                input.AddSegment(N - 1, N);
+                                input.AddSegment(N - 1, N,s);
                             }
                         }
                     }
@@ -185,43 +198,68 @@ namespace mikity.ghComponents
                         }
                     }
                     center /= 50;
-                    //input.AddHole(center.X, center.Y);
+                    input.AddHole(center.X, center.Y);
                     tmpN = N;
                 }
             }
-            //input.AddHole(-23.9180922915,-17.2936274735);
-            //input.AddHole(-17.6846493856, -18.4197444922);
-
+            foreach (var l in input.Holes)
+            {
+                g.Add(new Point3d(l.X, l.Y, 0));
+            }
+            foreach (var l in input.Segments)
+            {
+                var P = input.Points.ElementAt(l.P0);
+                var Q = input.Points.ElementAt(l.P1);
+                f.Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(Q.X, Q.Y, 0)));
+            }
 
 
 
             Mesher.Mesh mesh = new Mesher.Mesh();
-            //mesh.Behavior.MaxArea = Math.Pow(Math.Min(input.Bounds.Width, input.Bounds.Height) / 10d, 2);
-            //mesh.Behavior.Quality = true;
-            //mesh.Behavior.MinAngle = 25;
-            //mesh.Behavior.MaxAngle = 110;
-            //mesh.Behavior.Convex = false;
-            mesh.Behavior.Algorithm = TriangulationAlgorithm.Dwyer;
+            
+            mesh.Behavior.UseBoundaryMarkers = true;
+            mesh.Behavior.MaxArea = Math.Pow(Math.Min(input.Bounds.Width, input.Bounds.Height) / 10d, 2);
+            mesh.Behavior.Convex = false;
+            mesh.Behavior.Algorithm = TriangulationAlgorithm.SweepLine;
+            mesh.Behavior.ConformingDelaunay = true;
             mesh.Triangulate(input);
-            /*mesh.Behavior.MaxArea = mesh.Behavior.MaxArea*0.5;
-            mesh.Refine();
-            mesh.Behavior.MaxArea = mesh.Behavior.MaxArea * 0.5;
-            mesh.Refine();
-            mesh.Behavior.MaxArea = mesh.Behavior.MaxArea * 0.5;
-            mesh.Refine();
             Mesher.Tools.Statistic statistic = new Statistic();
             statistic.Update(mesh, 0);
-            mesh.Behavior.MaxArea = statistic.SmallestArea * 5;
+            mesh.Behavior.MaxArea = statistic.SmallestArea * 1.2;            
+            mesh.Behavior.Quality = true;
+            mesh.Behavior.MinAngle = 30;
+            mesh.Behavior.MaxAngle = 100;
+            
             mesh.Refine();
+            
             mesh.Smooth();
-            mesh.Smooth();*/
+            mesh.Smooth();
             for (int i = 0; i < mesh.Vertices.Count; i++)
             {
-                gmesh.Vertices.Add(new Point3d(mesh.Vertices.ElementAt(i).X, mesh.Vertices.ElementAt(i).Y, 0));
+                if (mesh.Vertices.ElementAt(i).Attributes == null)
+                {
+                    gmesh.Vertices.Add(new Point3d(mesh.Vertices.ElementAt(i).X, mesh.Vertices.ElementAt(i).Y, 0));
+                }
+                else
+                {
+                    gmesh.Vertices.Add(new Point3d(mesh.Vertices.ElementAt(i).X, mesh.Vertices.ElementAt(i).Y, mesh.Vertices.ElementAt(i).Attributes[0]));
+                }
             }
             for (int i = 0; i < mesh.Triangles.Count; i++)
             {
                 gmesh.Faces.AddFace(mesh.Triangles.ElementAt(i).P0, mesh.Triangles.ElementAt(i).P1, mesh.Triangles.ElementAt(i).P2);
+            }
+
+            for (int i = 0; i < mesh.Edges.Count(); i++)
+            {
+                var f = mesh.Edges.ElementAt(i).Boundary;
+                if (boundaries[f] == null)
+                {
+                    boundaries[f] = new List<Line>();
+                }
+                var P=mesh.Vertices.ElementAt(mesh.Edges.ElementAt(i).P0);
+                var Q=mesh.Vertices.ElementAt(mesh.Edges.ElementAt(i).P1);
+                boundaries[f].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(P.X, P.Y, 0)));
             }
         }
     }

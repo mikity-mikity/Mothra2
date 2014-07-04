@@ -15,6 +15,33 @@ namespace mikity.ghComponents
             {
                 return;
             }
+            if (boundaries != null)
+            {
+                for (int i = 0; i < boundaries.Count(); i++)
+                {
+                    var boundary = boundaries[i];
+                    System.Drawing.Color color = System.Drawing.Color.FromArgb(i * 30, 255 - i * 30, i * 60);
+                    foreach (var bb in boundary)
+                    {
+                        args.Display.DrawLine(bb, color);
+                    }
+                }
+            }
+
+            if (f != null)
+            {
+                foreach (var l in f)
+                {
+                    args.Display.DrawLine(l, System.Drawing.Color.Bisque);
+                }
+            }
+            if (g != null)
+            {
+                foreach (var l in g)
+                {
+                    args.Display.DrawPoint(l, System.Drawing.Color.Bisque);
+                }
+            }
             if (gmesh != null)
             {
                 args.Display.DrawMeshWires(gmesh, System.Drawing.Color.Red);
