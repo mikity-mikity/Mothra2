@@ -10,10 +10,16 @@ using Mesher;
 using Mesher.Geometry;
 using Mesher.Tools;
 
+using Mothra.UI;
+
+using ShoNS.Array;
+
 namespace mikity.ghComponents
 {
     public partial class Mothra2 : Grasshopper.Kernel.GH_Component
     {
+        ControlBox myControlBox = new ControlBox();
+
         List<Point3d> a;
         List<Point3d> a2;
         List<Point3d> b;
@@ -23,6 +29,9 @@ namespace mikity.ghComponents
         List<Line> f;
         List<Point3d> g;
         List<Line>[] boundaries;
+        List<Line>[] holes;
+        int nOutterSegments = 0;
+        int nInnerLoops = 0;
         Rhino.Geometry.Mesh gmesh = new Rhino.Geometry.Mesh();
         private void init()
         {
@@ -34,7 +43,6 @@ namespace mikity.ghComponents
             d2 = new List<Point3d>();
             f = new List<Line>();
             g = new List<Point3d>();
-            boundaries = new List<Line>[10];
         }
         public Mothra2()
             : base("Mothra2", "Mothra2", "Mothra2", "Kapybara3D", "Computation")
@@ -49,6 +57,15 @@ namespace mikity.ghComponents
             pManager.AddBrepParameter("TrimmedSurface", "trmSrf", "a trimmed surface, outer trim and holes are supported", Grasshopper.Kernel.GH_ParamAccess.item);
         }
         protected override void RegisterOutputParams(Grasshopper.Kernel.GH_Component.GH_OutputParamManager pManager)
+        {
+        }
+        public override void AddedToDocument(Grasshopper.Kernel.GH_Document document)
+        {
+            base.AddedToDocument(document);
+            myControlBox.Show();
+            myControlBox.setFunctionToCompute(() => { computeF(); });
+        }
+        void computeF()
         {
         }
         protected override void SolveInstance(Grasshopper.Kernel.IGH_DataAccess DA)
@@ -124,6 +141,7 @@ namespace mikity.ghComponents
             InputGeometry input = new InputGeometry(1000);
             int tmpN = 0;
             int N = 0;
+            int ss = 100;
             foreach (var loop in face.Loops)
             {
                 var _edges3D = loop.To3dCurve();
@@ -132,6 +150,7 @@ namespace mikity.ghComponents
                 {
                     var edges3D = _edges3D as PolyCurve;
                     var edges2D = _edges2D as PolyCurve;
+                    nOutterSegments = edges3D.SegmentCount;
                     for (int s = 0; s < edges3D.SegmentCount; s++)
                     {
                         var edge3D = edges3D.SegmentCurve(s);
@@ -149,7 +168,7 @@ namespace mikity.ghComponents
                             {
                                 input.AddPoint(P2D.X, P2D.Y);
                                 N++;
-                                input.AddSegment(N - 1, tmpN,s);
+                                input.AddSegment(N - 1, tmpN,s+1);
                             }
                             else if(_t<49)
                             {
@@ -162,7 +181,7 @@ namespace mikity.ghComponents
                                     input.AddPoint(P2D.X, P2D.Y);
                                 }
                                 N++;
-                                input.AddSegment(N - 1, N,s);
+                                input.AddSegment(N - 1, N,s+1);
                             }
                         }
                     }
@@ -187,21 +206,23 @@ namespace mikity.ghComponents
                             input.AddPoint(P2D.X, P2D.Y);
                             center += P2D;
                             N++;
-                            input.AddSegment(N - 1, N);
+                            input.AddSegment(N - 1, N,ss);
                         }
                         else if(_t==49)
                         {
                             input.AddPoint(P2D.X, P2D.Y);
                             center += P2D;
                             N++;
-                            input.AddSegment(N - 1, tmpN);
+                            input.AddSegment(N - 1, tmpN,ss);
                         }
                     }
+                    ss++;
                     center /= 50;
                     input.AddHole(center.X, center.Y);
                     tmpN = N;
                 }
             }
+            nInnerLoops = ss-100;
             foreach (var l in input.Holes)
             {
                 g.Add(new Point3d(l.X, l.Y, 0));
@@ -214,7 +235,7 @@ namespace mikity.ghComponents
             }
 
 
-
+            myControlBox.setNumF(nInnerLoops + nOutterSegments);
             Mesher.Mesh mesh = new Mesher.Mesh();
             
             mesh.Behavior.UseBoundaryMarkers = true;
@@ -234,32 +255,48 @@ namespace mikity.ghComponents
             
             mesh.Smooth();
             mesh.Smooth();
-            for (int i = 0; i < mesh.Vertices.Count; i++)
+            foreach(var P in mesh.Vertices)
             {
-                if (mesh.Vertices.ElementAt(i).Attributes == null)
+                if (P.Attributes == null)
                 {
-                    gmesh.Vertices.Add(new Point3d(mesh.Vertices.ElementAt(i).X, mesh.Vertices.ElementAt(i).Y, 0));
+                    gmesh.Vertices.Add(new Point3d(P.X, P.Y, 0));
                 }
                 else
                 {
-                    gmesh.Vertices.Add(new Point3d(mesh.Vertices.ElementAt(i).X, mesh.Vertices.ElementAt(i).Y, mesh.Vertices.ElementAt(i).Attributes[0]));
+                    gmesh.Vertices.Add(new Point3d(P.X, P.Y, P.Attributes[0]));
                 }
             }
-            for (int i = 0; i < mesh.Triangles.Count; i++)
+            foreach(var tri in mesh.Triangles)
             {
-                gmesh.Faces.AddFace(mesh.Triangles.ElementAt(i).P0, mesh.Triangles.ElementAt(i).P1, mesh.Triangles.ElementAt(i).P2);
+                gmesh.Faces.AddFace(tri.P0, tri.P1, tri.P2);
             }
 
-            for (int i = 0; i < mesh.Edges.Count(); i++)
+            boundaries = new List<Line>[nOutterSegments];
+            holes = new List<Line>[nInnerLoops];
+            foreach (var edge in mesh.Edges)
             {
-                var f = mesh.Edges.ElementAt(i).Boundary;
-                if (boundaries[f] == null)
+                var f = edge.Boundary;
+                if (f == 0) continue;
+                if (f < 100)
                 {
-                    boundaries[f] = new List<Line>();
+                    if (boundaries[f-1] == null)
+                    {
+                        boundaries[f-1] = new List<Line>();
+                    }
+                    var P = mesh.Vertices.ElementAt(edge.P0);
+                    var Q = mesh.Vertices.ElementAt(edge.P1);
+                    boundaries[f-1].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(Q.X, Q.Y, 0)));
                 }
-                var P=mesh.Vertices.ElementAt(mesh.Edges.ElementAt(i).P0);
-                var Q=mesh.Vertices.ElementAt(mesh.Edges.ElementAt(i).P1);
-                boundaries[f].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(P.X, P.Y, 0)));
+                else
+                {
+                    if (holes[f-100] == null)
+                    {
+                        holes[f-100] = new List<Line>();
+                    }
+                    var P = mesh.Vertices.ElementAt(edge.P0);
+                    var Q = mesh.Vertices.ElementAt(edge.P1);
+                    holes[f-100].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(Q.X, Q.Y, 0)));
+                }
             }
         }
     }

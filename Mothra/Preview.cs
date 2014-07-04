@@ -20,10 +20,44 @@ namespace mikity.ghComponents
                 for (int i = 0; i < boundaries.Count(); i++)
                 {
                     var boundary = boundaries[i];
-                    System.Drawing.Color color = System.Drawing.Color.FromArgb(i * 30, 255 - i * 30, i * 60);
-                    foreach (var bb in boundary)
+                    if (boundary != null)
                     {
-                        args.Display.DrawLine(bb, color);
+                        System.Drawing.Color color = System.Drawing.Color.Red;
+                        if (i == 0) color = System.Drawing.Color.Red;
+                        if (i == 1) color = System.Drawing.Color.Blue;
+                        if (i == 2) color = System.Drawing.Color.Green;
+                        if (i == 3) color = System.Drawing.Color.Yellow;
+                        if (i == 4) color = System.Drawing.Color.Orange;
+                        if (i == 5) color = System.Drawing.Color.Purple;
+                        if (i == 6) color = System.Drawing.Color.Brown;
+                        foreach (var bb in boundary)
+                        {
+                            args.Display.DrawLine(bb, color, 5);
+
+                        }
+                    }
+                }
+            }
+            if (holes != null)
+            {
+                for (int i = 0; i < holes.Count(); i++)
+                {
+                    var hole = holes[i];
+                    if (hole != null)
+                    {
+                        System.Drawing.Color color = System.Drawing.Color.Red;
+                        if (i == 0) color = System.Drawing.Color.Pink;
+                        if (i == 1) color = System.Drawing.Color.LightBlue;
+                        if (i == 2) color = System.Drawing.Color.LightGreen;
+                        if (i == 3) color = System.Drawing.Color.LightYellow;
+                        if (i == 4) color = System.Drawing.Color.LightCoral;
+                        if (i == 5) color = System.Drawing.Color.LightSeaGreen;
+                        if (i == 6) color = System.Drawing.Color.LightCyan;
+                        foreach (var bb in hole)
+                        {
+                            args.Display.DrawLine(bb, color, 5);
+
+                        }
                     }
                 }
             }
@@ -44,7 +78,7 @@ namespace mikity.ghComponents
             }
             if (gmesh != null)
             {
-                args.Display.DrawMeshWires(gmesh, System.Drawing.Color.Red);
+                args.Display.DrawMeshWires(gmesh, System.Drawing.Color.Gray);
             }
             if (a != null)
             {
@@ -53,13 +87,13 @@ namespace mikity.ghComponents
                     args.Display.DrawPoint(point, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
                 }
             }
-            if (a2 != null)
+            /*if (a2 != null)
             {
                 foreach (var point in a2)
                 {
                     args.Display.DrawPoint(point, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
                 }
-            }
+            }*/
             if (b != null)
             {
                 foreach (var point in b)
@@ -74,13 +108,13 @@ namespace mikity.ghComponents
                     args.Display.DrawPoint(point, Rhino.Display.PointStyle.Simple, 2, System.Drawing.Color.Brown);
                 }
             }
-            if (d2 != null)
+            /*if (d2 != null)
             {
                 foreach (var point in d2)
                 {
                     args.Display.DrawPoint(point, Rhino.Display.PointStyle.Simple, 2, System.Drawing.Color.Brown);
                 }
-            }
+            }*/
             if (c != null)
             {
                 foreach(var curve in c)

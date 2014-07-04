@@ -18,15 +18,15 @@ namespace Mothra.UI
     /// <summary>
     /// newButton.xaml の相互作用ロジック
     /// </summary>
-    public partial class newButton : UserControl
+    public partial class newRadioButton : UserControl
     {
         public Action function=null;
-        public newButton(Action func)
+        public newRadioButton(Action func)
         {
             function = func;
             InitializeComponent();
         }
-        public newButton()
+        public newRadioButton()
         {
             InitializeComponent();
         }
@@ -34,16 +34,17 @@ namespace Mothra.UI
         {
             set
             {
-                this.button1.Content = value;
+                this.radiobutton1.Content = value;
             }
             get
             {
-                return (string)this.button1.Content;
+                return (string)this.radiobutton1.Content;
             }
         }
-        private void button_Click(object sender, RoutedEventArgs e)
+ 
+        private void button1_Checked(object sender, RoutedEventArgs e)
         {
-            if(function!=null)function();
+            if (function != null) function();
         }
     }
 }
