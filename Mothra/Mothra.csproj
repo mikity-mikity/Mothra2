@@ -75,7 +75,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Numeric.cs" />
+    <Compile Include="Numerics.cs" />
     <Compile Include="nurbsMasonry.cs" />
     <Compile Include="GeometryProcessing.cs" />
     <Compile Include="Masonry.cs" />

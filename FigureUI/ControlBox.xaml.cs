@@ -81,5 +81,11 @@ namespace Mothra.UI
             e.Cancel = true;
             this.Hide();
         }
+
+        public void EnableRadio(int lastComputed)
+        {
+            radioButtonList[lastComputed].radiobutton1.IsEnabled = true;
+            
+        }
     }
 }

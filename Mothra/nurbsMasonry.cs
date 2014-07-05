@@ -30,9 +30,13 @@ namespace mikity.ghComponents
         List<Point3d> g;
         List<Line>[] boundaries;
         List<Line>[] holes;
+        SparseDoubleArray Laplacian;
+        SparseDoubleArray shiftArray;
         int nOutterSegments = 0;
         int nInnerLoops = 0;
         Rhino.Geometry.Mesh gmesh = new Rhino.Geometry.Mesh();
+        int lastComputed = -1;
+        int n, m;
         private void init()
         {
             a = new List<Point3d>();
@@ -43,6 +47,7 @@ namespace mikity.ghComponents
             d2 = new List<Point3d>();
             f = new List<Line>();
             g = new List<Point3d>();
+            lastComputed = -1;
         }
         public Mothra2()
             : base("Mothra2", "Mothra2", "Mothra2", "Kapybara3D", "Computation")
@@ -236,6 +241,13 @@ namespace mikity.ghComponents
 
 
             myControlBox.setNumF(nInnerLoops + nOutterSegments);
+            myControlBox.setFunctionToCompute(() => {
+                if (lastComputed == nInnerLoops + nOutterSegments - 1) return;
+                lastComputed++;
+                myControlBox.EnableRadio(lastComputed);
+
+            }
+                );
             Mesher.Mesh mesh = new Mesher.Mesh();
             
             mesh.Behavior.UseBoundaryMarkers = true;
@@ -298,6 +310,26 @@ namespace mikity.ghComponents
                     holes[f-100].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(Q.X, Q.Y, 0)));
                 }
             }
+            n = mesh.Vertices.Count();
+            m = mesh.Edges.Count();
+            int[,] lines = new int[m, n];
+            int _i = 0;
+            foreach (var edge in mesh.Edges)
+            {
+                lines[_i,0]=edge.P0;
+                lines[_i,1]=edge.P1;
+                _i++;
+            }
+            List<int> fixedPoints=new List<int>();
+            var vertices=mesh.Vertices.ToArray();
+            var edges=mesh.Edges.ToArray();
+
+            foreach(var V in vertices)
+            {
+                if(V.Boundary==1)fixedPoints.Add(Array.IndexOf(vertices,V));
+            }
+            Laplacian = computeLaplacian(lines, n);
+            shiftArray = computeShiftArray(fixedPoints, n);
         }
     }
 }
