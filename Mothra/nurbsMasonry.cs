@@ -119,7 +119,8 @@ namespace mikity.ghComponents
                             var domC = s.Domain;
                             double f;
                             s.ClosestPoint(P, out f);
-                            if (f > domC[0] && f < domC[1]) flagU = true;
+                            var P2=s.PointAt(f);
+                            if((P-P2).Length<0.00000001) flagU = true;
                         }
                     }
                     if (D.Length > 0)
@@ -129,7 +130,8 @@ namespace mikity.ghComponents
                             var domD = s.Domain;
                             double f;
                             s.ClosestPoint(P, out f);
-                            if (f > domD[0] && f < domD[1]) flagV = true;
+                            var P2 = s.PointAt(f);
+                            if ((P - P2).Length < 0.00000001) flagV = true;
                         }
                     }
                     if (flagU && flagV)
