@@ -22,6 +22,50 @@ namespace mikity.ghComponents
         }
         private void computeBaseFunction2(int lastComputed)
         {
+            DoubleArray origX = new DoubleArray(n, 1);
+            for (int i = 0; i < n; i++)
+            {
+                origX[i, 0] = 0;
+            }
+            var b = bbIn[lastComputed-nOutterSegments];
+            for (int i = 0; i < b.Count; i++)
+            {
+                origX[b[i].P0, 0] = 5d;
+            }
+            var M = (shiftArray.T.Multiply(Laplacian) as SparseDoubleArray) * shiftArray as SparseDoubleArray;
+            int T1 = n - fixedPoints.Count;
+            int T2 = n;
+            var slice1 = new SparseDoubleArray(T1, T2);
+            var slice2 = new SparseDoubleArray(T2, T2 - T1);
+            for (int i = 0; i < T1; i++)
+            {
+                slice1[i, i] = 1;
+            }
+            for (int i = 0; i < T2 - T1; i++)
+            {
+                slice2[i + T1, i] = 1;
+            }
+            var DIB = (slice1.Multiply(M) as SparseDoubleArray).Multiply(slice2) as SparseDoubleArray;
+            var DII = (slice1.Multiply(M) as SparseDoubleArray).Multiply(slice1.T) as SparseDoubleArray;
+            var solver = new SparseLU(DII);
+            origX = shiftArray.T * origX;
+            var fixX = origX.GetSlice(T1, T2 - 1, 0, 0);
+            var B = -DIB * fixX;
+            var dx = solver.Solve(B);
+            var ret = DoubleArray.Zeros(n, 1);
+            for (int i = 0; i < T1; i++)
+            {
+                ret[i, 0] = dx[i, 0];
+            }
+            for (int i = T1; i < T2; i++)
+            {
+                ret[i, 0] = fixX[i - T1, 0];
+            }
+            if (lastComputed < baseFunction.Length)
+            {
+                baseFunction[lastComputed] = shiftArray * ret;
+            }
+            if (lastComputed == 0) resultToPreview(0);
         }
         private void computeBaseFunction1(int lastComputed)
         {
@@ -30,7 +74,7 @@ namespace mikity.ghComponents
             {
                 origX[i, 0] = 0;
             }
-            var b = bb[lastComputed];
+            var b = bbOut[lastComputed];
             for (int i = 0; i < b.Count; i++)
             {
                 double y = Math.Pow((i - ((double)b.Count / 2d)) / ((double)b.Count / 2d), 2) - 1d;

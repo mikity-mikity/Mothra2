@@ -38,7 +38,8 @@ namespace mikity.ghComponents
 
         SparseDoubleArray Laplacian;
         SparseDoubleArray shiftArray;
-        List<Mesher.Geometry.Edge>[] bb;
+        List<Mesher.Geometry.Edge>[] bbOut;
+        List<Mesher.Geometry.Edge>[] bbIn;
         int n, m;
 
         Mesher.Data.Vertex[] vertices;
@@ -298,7 +299,8 @@ namespace mikity.ghComponents
 
             boundaries = new List<Line>[nOutterSegments];
             holes = new List<Line>[nInnerLoops];
-            bb = new List<Edge>[nOutterSegments];
+            bbOut = new List<Edge>[nOutterSegments];
+            bbIn = new List<Edge>[nInnerLoops];
             foreach (var edge in mesh.Edges)
             {
                 var f = edge.Boundary;
@@ -309,11 +311,11 @@ namespace mikity.ghComponents
                     {
                         boundaries[f-1] = new List<Line>();
                     }
-                    if (bb[f - 1] == null)
+                    if (bbOut[f - 1] == null)
                     {
-                        bb[f - 1] = new List<Edge>();
+                        bbOut[f - 1] = new List<Edge>();
                     }
-                    bb[f - 1].Add(new Edge(edge.P0, edge.P1));
+                    bbOut[f - 1].Add(new Edge(edge.P0, edge.P1));
                     var P = mesh.Vertices.ElementAt(edge.P0);
                     var Q = mesh.Vertices.ElementAt(edge.P1);
                     boundaries[f-1].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(Q.X, Q.Y, 0)));
@@ -324,6 +326,11 @@ namespace mikity.ghComponents
                     {
                         holes[f-100] = new List<Line>();
                     }
+                    if (bbIn[f - 100] == null)
+                    {
+                        bbIn[f - 100] = new List<Edge>();
+                    }
+                    bbIn[f - 100].Add(new Edge(edge.P0, edge.P1));
                     var P = mesh.Vertices.ElementAt(edge.P0);
                     var Q = mesh.Vertices.ElementAt(edge.P1);
                     holes[f-100].Add(new Line(new Point3d(P.X, P.Y, 0), new Point3d(Q.X, Q.Y, 0)));
@@ -351,9 +358,9 @@ namespace mikity.ghComponents
             shiftArray = computeShiftArray(fixedPoints, n);
 
             //Arranging bb
-            foreach (var bbb in bb)
+            foreach (var bbb in bbOut)
             {
-                //Look for an end
+                //Look for the first end
                 Mesher.Geometry.Edge first=null;
                 bool reverse = false;
                 foreach (var bbbb in bbb)
@@ -380,6 +387,32 @@ namespace mikity.ghComponents
                 }
                 bbb.Insert(0, first);
                 for (int i = 0; i < bbb.Count-1; i++)
+                {
+                    Mesher.Geometry.Edge next = null;
+                    reverse = false;
+                    int P = bbb[i].P1;
+                    for (int j = i + 1; j < bbb.Count; j++)
+                    {
+                        if (bbb[j].P0 == P) { next = bbb[j]; break; }
+                        if (bbb[j].P1 == P) { next = bbb[j]; reverse = true; break; }
+                    }
+                    bbb.Remove(next);
+                    if (reverse) next = new Edge(next.P1, next.P0);
+                    bbb.Insert(i + 1, next);
+                }
+            }
+            foreach (var bbb in bbIn)
+            {
+                //For inner loops, any edge can be the first edge
+                Mesher.Geometry.Edge first = bbb[0];
+                bool reverse = false;
+                bbb.Remove(first);
+                if (reverse)
+                {
+                    first = new Edge(first.P1, first.P0);
+                }
+                bbb.Insert(0, first);
+                for (int i = 0; i < bbb.Count - 1; i++)
                 {
                     Mesher.Geometry.Edge next = null;
                     reverse = false;
