@@ -20,8 +20,9 @@ namespace Mothra.UI
     /// </summary>
     public partial class newRadioButton : UserControl
     {
-        public Action function=null;
-        public newRadioButton(Action func)
+        public Action<int> function=null;
+        public int number = -1;
+        public newRadioButton(Action<int> func)
         {
             function = func;
             InitializeComponent();
@@ -44,7 +45,7 @@ namespace Mothra.UI
  
         private void button1_Checked(object sender, RoutedEventArgs e)
         {
-            if (function != null) function();
+            if (function != null) function(this.number);
         }
     }
 }

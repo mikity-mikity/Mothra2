@@ -26,6 +26,7 @@ namespace Mothra.UI
             for (int i = 0; i < num; i++)
             {
                 radioButtonList[i] = new newRadioButton();
+                radioButtonList[i].number = i;
                 this.wrapPanel1.Children.Add(radioButtonList[i]);
                 radioButtonList[i].radiobutton1.Content = i.ToString();
             }
@@ -82,10 +83,11 @@ namespace Mothra.UI
             this.Hide();
         }
 
-        public void EnableRadio(int lastComputed)
+        public void EnableRadio(int lastComputed,Action<int> func)
         {
             radioButtonList[lastComputed].radiobutton1.IsEnabled = true;
-            
+            radioButtonList[lastComputed].function = func;
+            radioButtonList[lastComputed].number = lastComputed;
         }
     }
 }

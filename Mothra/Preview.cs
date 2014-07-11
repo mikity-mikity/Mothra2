@@ -15,6 +15,10 @@ namespace mikity.ghComponents
             {
                 return;
             }
+            if (result != null)
+            {
+                args.Display.DrawLines(result, System.Drawing.Color.Red);
+            }
             if (boundaries != null)
             {
                 for (int i = 0; i < boundaries.Count(); i++)

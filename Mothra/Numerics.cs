@@ -8,6 +8,86 @@ namespace mikity.ghComponents
 {
     public partial class Mothra2 : Grasshopper.Kernel.GH_Component
     {
+        private DoubleArray[] baseFunction;
+        public void computeBaseFunction(int lastComputed)
+        {
+            if (lastComputed >= nOutterSegments)
+            {
+                computeBaseFunction2(lastComputed);
+            }
+            else
+            {
+                computeBaseFunction1(lastComputed);
+            }
+        }
+        private void computeBaseFunction2(int lastComputed)
+        {
+        }
+        private void computeBaseFunction1(int lastComputed)
+        {
+            DoubleArray origX = new DoubleArray(n, 1);
+            for (int i = 0; i < n; i++)
+            {
+                origX[i, 0] = 0;
+            }
+            var b = bb[lastComputed];
+            for (int i = 0; i < b.Count; i++)
+            {
+                double y = Math.Pow((i - ((double)b.Count / 2d)) / ((double)b.Count / 2d), 2) - 1d;
+                origX[b[i].P0, 0] = -3d * y;
+                if (i == b.Count - 1)
+                {
+                    y = Math.Pow(((i + 1d) - ((double)b.Count / 2d)) / ((double)b.Count / 2d), 2) - 1d;
+                    origX[b[i].P1, 0] = -3d * y;
+                }
+            }
+            var M = (shiftArray.T.Multiply(Laplacian) as SparseDoubleArray) * shiftArray as SparseDoubleArray;
+            int T1 = n - fixedPoints.Count;
+            int T2 = n;
+            var slice1 = new SparseDoubleArray(T1, T2);
+            var slice2 = new SparseDoubleArray(T2, T2 - T1);
+            for (int i = 0; i < T1; i++)
+            {
+                slice1[i, i] = 1;
+            }
+            for (int i = 0; i < T2 - T1; i++)
+            {
+                slice2[i + T1, i] = 1;
+            }
+            var DIB = (slice1.Multiply(M) as SparseDoubleArray).Multiply(slice2) as SparseDoubleArray;
+            var DII = (slice1.Multiply(M) as SparseDoubleArray).Multiply(slice1.T) as SparseDoubleArray;
+            var solver = new SparseLU(DII);
+            origX = shiftArray.T * origX;
+            var fixX = origX.GetSlice(T1, T2 - 1, 0, 0);
+            var B = -DIB * fixX;
+            var dx = solver.Solve(B);
+            var ret = DoubleArray.Zeros(n, 1);
+            for (int i = 0; i < T1; i++)
+            {
+                ret[i, 0] = dx[i, 0];
+            }
+            for (int i = T1; i < T2; i++)
+            {
+                ret[i, 0] = fixX[i - T1, 0];
+            }
+            if (lastComputed < baseFunction.Length)
+            {
+                baseFunction[lastComputed] = shiftArray * ret;
+            }
+            if (lastComputed == 0) resultToPreview(0);
+        }
+        public void resultToPreview(int num)
+        {
+            result = new List<Rhino.Geometry.Line>();
+            if (baseFunction[num] == null) { result = null; return; }
+            var xx = baseFunction[num];
+            foreach (var edge in edges)
+            {
+                Rhino.Geometry.Point3d P = new Rhino.Geometry.Point3d(vertices[edge.P0].X, vertices[edge.P0].Y, xx[edge.P0]);
+                Rhino.Geometry.Point3d Q = new Rhino.Geometry.Point3d(vertices[edge.P1].X, vertices[edge.P1].Y, xx[edge.P1]);
+                result.Add(new Rhino.Geometry.Line(P, Q));
+            }
+        }
         public SparseDoubleArray computeLaplacian(int[,] lines, int nP)
         {
             if (lines.GetLength(1) != 2) return null;
@@ -18,7 +98,7 @@ namespace mikity.ghComponents
                 int P = lines[i, 0];
                 int Q = lines[i, 1];
                 C[i, P] = 1;
-                C[i, Q] = -11;
+                C[i, Q] = -1;
             }
             SparseDoubleArray D = (C.T * C) as SparseDoubleArray;
             return D;
