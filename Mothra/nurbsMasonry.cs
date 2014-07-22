@@ -91,7 +91,8 @@ namespace mikity.ghComponents
             var face=brep.Faces[0];
             var domU=face.Domain(0);
             var domV=face.Domain(1);
-            int nPt = 30;
+            int nPt = 100;
+            int nPt2 = 40;
 
             for (int i = 0; i <= nPt; i++)
             {
@@ -156,7 +157,7 @@ namespace mikity.ghComponents
                     }
                 }
             }
-            InputGeometry input = new InputGeometry(1000);
+            InputGeometry input = new InputGeometry();
             int tmpN = 0;
             int N = 0;
             int ss = 100;
@@ -175,20 +176,20 @@ namespace mikity.ghComponents
                         var edge2D = edges2D.SegmentCurve(s);
                         var dom2D = edge2D.Domain;
                         var dom3D=edge3D.Domain;
-                        for (int _t = 0; _t <= nPt; _t++)
+                        for (int _t = 0; _t <= nPt2; _t++)
                         {
-                            double t = dom2D[0] + (dom2D[1] - dom2D[0]) / ((double)nPt) * _t;
+                            double t = dom2D[0] + (dom2D[1] - dom2D[0]) / ((double)nPt2) * _t;
                             var P2D=edge2D.PointAt(t);
                             var P3D=face.PointAt(P2D.X,P2D.Y);
                             d.Add(P3D);
                             d2.Add(P2D);
-                            if (_t == nPt-1 && s == edges3D.SegmentCount - 1)
+                            if (_t == nPt2-1 && s == edges3D.SegmentCount - 1)
                             {
                                 input.AddPoint(P2D.X, P2D.Y);
                                 N++;
                                 input.AddSegment(N - 1, tmpN,s+1);
                             }
-                            else if(_t<nPt-1)
+                            else if(_t<nPt2-1)
                             {
                                 if (_t == 0)
                                 {
@@ -212,21 +213,21 @@ namespace mikity.ghComponents
                     var dom2D=edges2D.Domain;
                     var dom3D=edges3D.Domain;
                     var center = new Point3d(0, 0, 0);
-                    for (int _t = 0; _t <= nPt; _t++)
+                    for (int _t = 0; _t <= nPt2; _t++)
                     {
-                        double t = dom2D[0] + (dom2D[1] - dom2D[0]) / ((double)nPt) * _t;
+                        double t = dom2D[0] + (dom2D[1] - dom2D[0]) / ((double)nPt2) * _t;
                         var P2D = edges2D.PointAt(t);
                         var P3D = face.PointAt(P2D.X, P2D.Y);
                         d.Add(P3D);
                         d2.Add(P2D);
-                        if (_t < nPt-1)
+                        if (_t < nPt2-1)
                         {
                             input.AddPoint(P2D.X, P2D.Y);
                             center += P2D;
                             N++;
                             input.AddSegment(N - 1, N,ss);
                         }
-                        else if(_t==nPt-1)
+                        else if(_t==nPt2-1)
                         {
                             input.AddPoint(P2D.X, P2D.Y);
                             center += P2D;
@@ -235,7 +236,7 @@ namespace mikity.ghComponents
                         }
                     }
                     ss++;
-                    center /= nPt;
+                    center /= nPt2;
                     input.AddHole(center.X, center.Y);
                     tmpN = N;
                 }
@@ -257,7 +258,10 @@ namespace mikity.ghComponents
             baseFunction = new DoubleArray[nInnerLoops + nOutterSegments];
             coeff = new DoubleArray[nInnerLoops + nOutterSegments];
             Function = new Func<double, double, double>[nInnerLoops + nOutterSegments];
-            myControlBox.setFunctionToCompute(() => {
+            dFunction = new Action<double, double, double[]>[nInnerLoops + nOutterSegments];
+            ddFunction = new Action<double, double, double[,]>[nInnerLoops + nOutterSegments];
+            myControlBox.setFunctionToCompute(() =>
+            {
                 if (lastComputed == nInnerLoops + nOutterSegments - 1) return;
                 lastComputed++;
                 computeBaseFunction(lastComputed);

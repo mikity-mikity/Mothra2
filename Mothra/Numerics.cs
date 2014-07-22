@@ -12,8 +12,22 @@ namespace mikity.ghComponents
         private DoubleArray[] baseFunction;
         private DoubleArray[] coeff;
         Func<double, double, double>[] Function;
+        Action<double, double, double[]>[] dFunction;
+        Action<double, double, double[,]>[] ddFunction;
         private static double epsilon = 0.2;
         Func<double, double, double, double, double> F = (x1, x2, y1, y2) => { return Math.Sqrt(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)))); };
+        Action<double, double, double, double, double[]> dF = (x1, x2, y1, y2, grad) =>
+        {
+            grad[0] = epsilon * (x1 - x2) / Math.Sqrt(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2))));
+            grad[1] = epsilon * (y1 - y2) / Math.Sqrt(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2))));
+        };
+        Action<double, double, double, double, double[,]> ddF = (x1, x2, y1, y2, grad) =>
+        {
+            grad[0, 0] = epsilon / Math.Sqrt(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)))) - epsilon * epsilon * (x1 - x2) * (x1 - x2) * Math.Pow(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2))), -3 / 2d);
+            grad[0, 1] = -epsilon * epsilon * (x1 - x2) * (y1 - y2) * Math.Pow(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2))), -3 / 2d);
+            grad[1, 0] = -epsilon * epsilon * (x1 - x2) * (y1 - y2) * Math.Pow(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2))), -3 / 2d);
+            grad[1, 1] = epsilon / Math.Sqrt(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)))) - epsilon * epsilon * (y1 - y2) * (y1 - y2) * Math.Pow(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2))), -3 / 2d);
+        };
         public void computeBaseFunction(int lastComputed)
         {
             if (lastComputed >= nOutterSegments)
@@ -25,18 +39,9 @@ namespace mikity.ghComponents
                 computeBaseFunction1(lastComputed);
             }
         }
-        private void computeBaseFunction2(int lastComputed)
+
+        private void computeBaseFunctionCommon(int lastComputed,DoubleArray origX)
         {
-            DoubleArray origX = new DoubleArray(n, 1);
-            for (int i = 0; i < n; i++)
-            {
-                origX[i, 0] = 0;
-            }
-            var b = bbIn[lastComputed-nOutterSegments];
-            for (int i = 0; i < b.Count; i++)
-            {
-                origX[b[i].P0, 0] = 5d;
-            }
             var M = (shiftArray.T.Multiply(Laplacian) as SparseDoubleArray) * shiftArray as SparseDoubleArray;
             int T1 = n - fixedPoints.Count;
             int T2 = n;
@@ -87,7 +92,8 @@ namespace mikity.ghComponents
             }
             var solver2 = new LU(MM);
             coeff[lastComputed] = solver2.Solve(V);
-            Function[lastComputed] = (x, y) => {
+            Function[lastComputed] = (x, y) =>
+            {
                 double val = 0;
                 for (int j = 0; j < n; j++)
                 {
@@ -95,7 +101,52 @@ namespace mikity.ghComponents
                 }
                 return val;
             };
+            dFunction[lastComputed] = (x, y, val) =>
+            {
+                val[0] = 0;
+                val[1] = 0;
+                double[] r = new double[2] { 0, 0 };
+                for (int j = 0; j < n; j++)
+                {
+                    dF(x, vertices[j].X, y, vertices[j].Y, r);
+                    val[0] += coeff[lastComputed][j, 0] * r[0];
+                    val[1] += coeff[lastComputed][j, 0] * r[1];
+                }
+
+            };
+            ddFunction[lastComputed] = (x, y, val) =>
+            {
+                val[0, 0] = 0;
+                val[0, 1] = 0;
+                val[1, 0] = 0;
+                val[1, 1] = 0;
+                double[,] r = new double[2, 2] { {0, 0}, {0, 0} };
+                for (int j = 0; j < n; j++)
+                {
+                    ddF(x, vertices[j].X, y, vertices[j].Y, r);
+                    val[0, 0] += coeff[lastComputed][j, 0] * r[0, 0];
+                    val[0, 1] += coeff[lastComputed][j, 0] * r[0, 1];
+                    val[1, 0] += coeff[lastComputed][j, 0] * r[1, 0];
+                    val[1, 1] += coeff[lastComputed][j, 0] * r[1, 1];
+                }
+
+            };
             if (lastComputed == 0) resultToPreview(0);
+        }
+        private void computeBaseFunction2(int lastComputed)
+        {
+            DoubleArray origX = new DoubleArray(n, 1);
+            for (int i = 0; i < n; i++)
+            {
+                origX[i, 0] = 0;
+            }
+            var b = bbIn[lastComputed-nOutterSegments];
+            for (int i = 0; i < b.Count; i++)
+            {
+                origX[b[i].P0, 0] = 5d;
+            }
+            computeBaseFunctionCommon(lastComputed, origX);
+
         }
         private void computeBaseFunction1(int lastComputed)
         {
@@ -115,65 +166,7 @@ namespace mikity.ghComponents
                     origX[b[i].P1, 0] = -3d * y;
                 }
             }
-            var M = (shiftArray.T.Multiply(Laplacian) as SparseDoubleArray) * shiftArray as SparseDoubleArray;
-            int T1 = n - fixedPoints.Count;
-            int T2 = n;
-            var slice1 = new SparseDoubleArray(T1, T2);
-            var slice2 = new SparseDoubleArray(T2, T2 - T1);
-            for (int i = 0; i < T1; i++)
-            {
-                slice1[i, i] = 1;
-            }
-            for (int i = 0; i < T2 - T1; i++)
-            {
-                slice2[i + T1, i] = 1;
-            }
-            var DIB = (slice1.Multiply(M) as SparseDoubleArray).Multiply(slice2) as SparseDoubleArray;
-            var DII = (slice1.Multiply(M) as SparseDoubleArray).Multiply(slice1.T) as SparseDoubleArray;
-            var solver = new SparseLU(DII);
-            origX = shiftArray.T * origX;
-            var fixX = origX.GetSlice(T1, T2 - 1, 0, 0);
-            var B = -DIB * fixX;
-            var dx = solver.Solve(B);
-            var ret = DoubleArray.Zeros(n, 1);
-            for (int i = 0; i < T1; i++)
-            {
-                ret[i, 0] = dx[i, 0];
-            }
-            for (int i = T1; i < T2; i++)
-            {
-                ret[i, 0] = fixX[i - T1, 0];
-            }
-            if (lastComputed < baseFunction.Length)
-            {
-                baseFunction[lastComputed] = shiftArray * ret;
-            }
-            var MM = DoubleArray.Zeros(n, n);
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < n; j++)
-                {
-                    MM[i, j] = F(vertices[i].X, vertices[j].X, vertices[i].Y, vertices[j].Y);
-                }
-            }
-            var V = DoubleArray.Zeros(n, 1);
-            for (int i = 0; i < n; i++)
-            {
-                V[i, 0] = baseFunction[lastComputed][i, 0];
-            }
-            var solver2 = new LU(MM);
-            coeff[lastComputed] = solver2.Solve(V);
-            Function[lastComputed] = (x, y) =>
-            {
-                double val = 0;
-                for (int j = 0; j < n; j++)
-                {
-                    val += coeff[lastComputed][j, 0] * F(x, vertices[j].X, y, vertices[j].Y);
-                }
-                return val;
-            };
-            if (lastComputed == 0) resultToPreview(0);
-
+            computeBaseFunctionCommon(lastComputed, origX);
         }
         public void resultToPreview(int num)
         {
