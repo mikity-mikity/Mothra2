@@ -4,11 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ShoNS.Array;
+using Rhino.Geometry;
 namespace mikity.ghComponents
 {
     public partial class Mothra2 : Grasshopper.Kernel.GH_Component
     {
         private DoubleArray[] baseFunction;
+        private DoubleArray[] coeff;
+        Func<double, double, double>[] Function;
+        private static double epsilon = 0.2;
+        Func<double, double, double, double, double> F = (x1, x2, y1, y2) => { return Math.Sqrt(1 + epsilon * (((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)))); };
         public void computeBaseFunction(int lastComputed)
         {
             if (lastComputed >= nOutterSegments)
@@ -65,6 +70,31 @@ namespace mikity.ghComponents
             {
                 baseFunction[lastComputed] = shiftArray * ret;
             }
+            //vertices...x,y
+            //baseFunction[]...z
+            var MM = DoubleArray.Zeros(n, n);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    MM[i, j] = F(vertices[i].X, vertices[j].X, vertices[i].Y, vertices[j].Y);
+                }
+            }
+            var V = DoubleArray.Zeros(n, 1);
+            for (int i = 0; i < n; i++)
+            {
+                V[i, 0] = baseFunction[lastComputed][i, 0];
+            }
+            var solver2 = new LU(MM);
+            coeff[lastComputed] = solver2.Solve(V);
+            Function[lastComputed] = (x, y) => {
+                double val = 0;
+                for (int j = 0; j < n; j++)
+                {
+                    val += coeff[lastComputed][j, 0] * F(x, vertices[j].X, y, vertices[j].Y);
+                }
+                return val;
+            };
             if (lastComputed == 0) resultToPreview(0);
         }
         private void computeBaseFunction1(int lastComputed)
@@ -118,7 +148,32 @@ namespace mikity.ghComponents
             {
                 baseFunction[lastComputed] = shiftArray * ret;
             }
+            var MM = DoubleArray.Zeros(n, n);
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    MM[i, j] = F(vertices[i].X, vertices[j].X, vertices[i].Y, vertices[j].Y);
+                }
+            }
+            var V = DoubleArray.Zeros(n, 1);
+            for (int i = 0; i < n; i++)
+            {
+                V[i, 0] = baseFunction[lastComputed][i, 0];
+            }
+            var solver2 = new LU(MM);
+            coeff[lastComputed] = solver2.Solve(V);
+            Function[lastComputed] = (x, y) =>
+            {
+                double val = 0;
+                for (int j = 0; j < n; j++)
+                {
+                    val += coeff[lastComputed][j, 0] * F(x, vertices[j].X, y, vertices[j].Y);
+                }
+                return val;
+            };
             if (lastComputed == 0) resultToPreview(0);
+
         }
         public void resultToPreview(int num)
         {
@@ -130,6 +185,12 @@ namespace mikity.ghComponents
                 Rhino.Geometry.Point3d P = new Rhino.Geometry.Point3d(vertices[edge.P0].X, vertices[edge.P0].Y, xx[edge.P0]);
                 Rhino.Geometry.Point3d Q = new Rhino.Geometry.Point3d(vertices[edge.P1].X, vertices[edge.P1].Y, xx[edge.P1]);
                 result.Add(new Rhino.Geometry.Line(P, Q));
+            }
+            for (int i = 0; i < a.Count; i++)
+            {
+                Point3d P = new Point3d(a[i].X, a[i].Y, Function[num](a2[i].X, a2[i].Y));
+                a.RemoveAt(i);
+                a.Insert(i, P);
             }
         }
         public SparseDoubleArray computeLaplacian(int[,] lines, int nP)

@@ -75,10 +75,7 @@ namespace mikity.ghComponents
             }
             if (g != null)
             {
-                foreach (var l in g)
-                {
-                    args.Display.DrawPoint(l, System.Drawing.Color.Bisque);
-                }
+                args.Display.DrawPoints(g, Rhino.Display.PointStyle.ActivePoint, 2, System.Drawing.Color.Bisque);
             }
             if (gmesh != null)
             {
@@ -86,39 +83,21 @@ namespace mikity.ghComponents
             }
             if (a != null)
             {
-                foreach (var point in a)
-                {
-                    args.Display.DrawPoint(point, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
-                }
+                args.Display.DrawPoints(a, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
+
             }
-            /*if (a2 != null)
+            if (a2 != null)
             {
-                foreach (var point in a2)
-                {
-                    args.Display.DrawPoint(point, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
-                }
-            }*/
+                args.Display.DrawPoints(a2, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
+            }
             if (b != null)
             {
-                foreach (var point in b)
-                {
-                    args.Display.DrawPoint(point, Rhino.Display.PointStyle.ControlPoint, 2, System.Drawing.Color.Orange);
-                }
+                args.Display.DrawPoints(b, Rhino.Display.PointStyle.ControlPoint, 2, System.Drawing.Color.Orange);
             }
             if (d != null)
             {
-                foreach (var point in d)
-                {
-                    args.Display.DrawPoint(point, Rhino.Display.PointStyle.Simple, 2, System.Drawing.Color.Brown);
-                }
+                args.Display.DrawPoints(d, Rhino.Display.PointStyle.Simple, 2, System.Drawing.Color.Brown);
             }
-            /*if (d2 != null)
-            {
-                foreach (var point in d2)
-                {
-                    args.Display.DrawPoint(point, Rhino.Display.PointStyle.Simple, 2, System.Drawing.Color.Brown);
-                }
-            }*/
             if (c != null)
             {
                 foreach(var curve in c)

@@ -91,31 +91,32 @@ namespace mikity.ghComponents
             var face=brep.Faces[0];
             var domU=face.Domain(0);
             var domV=face.Domain(1);
+            int nPt = 30;
 
-            for (int i = 0; i <= 50; i++)
+            for (int i = 0; i <= nPt; i++)
             {
-                double u = domU[0] + (domU[1] - domU[0]) / 50d * i;
+                double u = domU[0] + (domU[1] - domU[0]) / ((double)nPt) * i;
                 var C = face.TrimAwareIsoCurve(1, u);
                 foreach (var curve in C)
                 {
                     c.Add(curve);
                 }
             }
-            for (int i = 0; i <= 50; i++)
+            for (int i = 0; i <= nPt; i++)
             {
-                double v = domV[0] + (domV[1] - domV[0]) / 50d * i;
+                double v = domV[0] + (domV[1] - domV[0]) / ((double)nPt) * i;
                 var D = face.TrimAwareIsoCurve(0, v);
                 foreach (var curve in D)
                 {
                     c.Add(curve);
                 }
             }
-            for (int i = 0; i <= 50; i++)
+            for (int i = 0; i <= nPt; i++)
             {
-                for (int j = 0; j <= 50; j++)
+                for (int j = 0; j <= nPt; j++)
                 {
-                    double u = domU[0] + (domU[1] - domU[0]) / 50d * i;
-                    double v = domV[0] + (domV[1] - domV[0]) / 50d * j;
+                    double u = domU[0] + (domU[1] - domU[0]) / ((double)nPt) * i;
+                    double v = domV[0] + (domV[1] - domV[0]) / ((double)nPt) * j;
                     Point3d P;
                     Vector3d[] tmp;
                     var flag=face.Evaluate(u,v,0,out P,out tmp);
@@ -174,20 +175,20 @@ namespace mikity.ghComponents
                         var edge2D = edges2D.SegmentCurve(s);
                         var dom2D = edge2D.Domain;
                         var dom3D=edge3D.Domain;
-                        for (int _t = 0; _t <= 50; _t++)
+                        for (int _t = 0; _t <= nPt; _t++)
                         {
-                            double t = dom2D[0] + (dom2D[1] - dom2D[0]) / 50d * _t;
+                            double t = dom2D[0] + (dom2D[1] - dom2D[0]) / ((double)nPt) * _t;
                             var P2D=edge2D.PointAt(t);
                             var P3D=face.PointAt(P2D.X,P2D.Y);
                             d.Add(P3D);
                             d2.Add(P2D);
-                            if (_t == 49 && s == edges3D.SegmentCount - 1)
+                            if (_t == nPt-1 && s == edges3D.SegmentCount - 1)
                             {
                                 input.AddPoint(P2D.X, P2D.Y);
                                 N++;
                                 input.AddSegment(N - 1, tmpN,s+1);
                             }
-                            else if(_t<49)
+                            else if(_t<nPt-1)
                             {
                                 if (_t == 0)
                                 {
@@ -211,21 +212,21 @@ namespace mikity.ghComponents
                     var dom2D=edges2D.Domain;
                     var dom3D=edges3D.Domain;
                     var center = new Point3d(0, 0, 0);
-                    for (int _t = 0; _t <= 50; _t++)
+                    for (int _t = 0; _t <= nPt; _t++)
                     {
-                        double t = dom2D[0] + (dom2D[1] - dom2D[0]) / 50d * _t;
+                        double t = dom2D[0] + (dom2D[1] - dom2D[0]) / ((double)nPt) * _t;
                         var P2D = edges2D.PointAt(t);
                         var P3D = face.PointAt(P2D.X, P2D.Y);
                         d.Add(P3D);
                         d2.Add(P2D);
-                        if (_t < 49)
+                        if (_t < nPt-1)
                         {
                             input.AddPoint(P2D.X, P2D.Y);
                             center += P2D;
                             N++;
                             input.AddSegment(N - 1, N,ss);
                         }
-                        else if(_t==49)
+                        else if(_t==nPt-1)
                         {
                             input.AddPoint(P2D.X, P2D.Y);
                             center += P2D;
@@ -234,7 +235,7 @@ namespace mikity.ghComponents
                         }
                     }
                     ss++;
-                    center /= 50;
+                    center /= nPt;
                     input.AddHole(center.X, center.Y);
                     tmpN = N;
                 }
@@ -254,6 +255,8 @@ namespace mikity.ghComponents
 
             myControlBox.setNumF(nInnerLoops + nOutterSegments);
             baseFunction = new DoubleArray[nInnerLoops + nOutterSegments];
+            coeff = new DoubleArray[nInnerLoops + nOutterSegments];
+            Function = new Func<double, double, double>[nInnerLoops + nOutterSegments];
             myControlBox.setFunctionToCompute(() => {
                 if (lastComputed == nInnerLoops + nOutterSegments - 1) return;
                 lastComputed++;
@@ -270,9 +273,10 @@ namespace mikity.ghComponents
             mesh.Behavior.Algorithm = TriangulationAlgorithm.SweepLine;
             mesh.Behavior.ConformingDelaunay = true;
             mesh.Triangulate(input);
-            Mesher.Tools.Statistic statistic = new Statistic();
+/*            Mesher.Tools.Statistic statistic = new Statistic();
             statistic.Update(mesh, 0);
             mesh.Behavior.MaxArea = statistic.SmallestArea * 1.2;            
+            */
             mesh.Behavior.Quality = true;
             mesh.Behavior.MinAngle = 30;
             mesh.Behavior.MaxAngle = 100;
