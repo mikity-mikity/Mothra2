@@ -90,8 +90,10 @@ namespace mikity.ghComponents
             {
                 V[i, 0] = baseFunction[lastComputed][i, 0];
             }
-            var solver2 = new LU(MM);
+            //var solver2 = new LU(MM);
+            var solver2 = new SVD(MM);
             coeff[lastComputed] = solver2.Solve(V);
+            System.Windows.Forms.MessageBox.Show(solver2.Rank().ToString()+","+n.ToString());
             Function[lastComputed] = (x, y) =>
             {
                 double val = 0;

@@ -92,7 +92,7 @@ namespace mikity.ghComponents
             var domU=face.Domain(0);
             var domV=face.Domain(1);
             int nPt = 100;
-            int nPt2 = 40;
+            int nPt2 = 50;
 
             for (int i = 0; i <= nPt; i++)
             {
