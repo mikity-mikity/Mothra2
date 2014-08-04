@@ -18,6 +18,40 @@ namespace mikity.ghComponents
 {
     public partial class Mothra2 : Grasshopper.Kernel.GH_Component
     {
+        public struct tuple
+        {
+            public double u, v;
+            public double area;
+            int N;
+            public double[] f;
+            public double[][] df;
+            public double[][,] ddf;
+            public double[] nf;
+            public double[][] ndf;
+            public double[][,] nddf;
+            public double[,] kernel;
+            public tuple(int _N,double _u,double _v,double _area)
+            {
+                N = _N;
+                u = _u;
+                v = _v;
+                area = _area;
+                f = new double[N];
+                df = new double[N][];
+                ddf = new double[N][,];
+                nf = new double[N];
+                ndf = new double[N][];
+                nddf = new double[N][,];
+                kernel = new double[N, N];
+                for (int i = 0; i < N; i++)
+                {
+                    df[i] = new double[2];
+                    ndf[i] = new double[2];
+                    ddf[i] = new double[2, 2];
+                    nddf[i] = new double[2, 2];
+                }
+            }
+        }
         ControlBox myControlBox = new ControlBox();
 
         List<Point3d> a;
@@ -40,11 +74,12 @@ namespace mikity.ghComponents
         SparseDoubleArray shiftArray;
         List<Mesher.Geometry.Edge>[] bbOut;
         List<Mesher.Geometry.Edge>[] bbIn;
-        int n, m;
+        int n, m, r;  //Number of vertices, edges and triangles.
 
         Mesher.Data.Vertex[] vertices;
         Mesher.Geometry.Edge[] edges;
         Mesher.Data.Triangle[] triangles;
+        tuple[] tuples;
         List<int> fixedPoints;
             
         private void init()
@@ -78,10 +113,80 @@ namespace mikity.ghComponents
         {
             base.AddedToDocument(document);
             myControlBox.Show();
-            myControlBox.setFunctionToCompute(() => { computeF(); });
+            myControlBox.setFunctionToCompute2(() => { computeF(); });
         }
         void computeF()
         {
+            if (lastComputed == nInnerLoops + nOutterSegments - 1) {
+                int N=nInnerLoops+nOutterSegments;
+                tuples = new tuple[r];
+                for(int i=0;i<r;i++)
+                {
+                    var tri = triangles[i];
+                    var A = tri.GetVertex(0);
+                    var B = tri.GetVertex(1);
+                    var C = tri.GetVertex(2);
+                    double centerU = (A.X + B.X + C.X) / 3d;
+                    double centerV = (A.Y + B.Y + C.Y) / 3d;
+                    tuples[i] = new tuple(nInnerLoops + nOutterSegments, centerU, centerV,tri.Area);
+                    for(int s=0;s<N;s++)
+                    {
+                        tuples[i].f[s] = Function[s](centerU, centerV);
+                        dFunction[s](centerU, centerV, tuples[i].df[s]);
+                        ddFunction[s](centerU, centerV, tuples[i].ddf[s]);
+                    }
+                    //computes kernel...
+                    double squaredLength = 0;
+                    for (int s = 0; s < N; s++)
+                    {
+                        squaredLength+=tuples[i].f[s] * tuples[i].f[s];
+                    }
+                    for (int s = 0; s < N; s++)
+                    {
+                        for (int t = 0; t < N; t++)
+                        {
+                            tuples[i].kernel[s, t] = -tuples[i].f[s] * tuples[i].f[t] / squaredLength;
+                            if (s == t) tuples[i].kernel[s, t] += 1d;
+                        }
+                    }
+                    double norm=Math.Sqrt(squaredLength);
+                    //compute normalized base function
+                    for(int s=0;s<N;s++)
+                    {
+                        tuples[i].nf[s]=tuples[i].f[s]/norm;
+                    }
+                    // compute normalized first derivative
+                    for(int v=0;v<2;v++)
+                    {
+                        for (int s = 0; s < N; s++)
+                        {
+                            double val = 0;
+                            for (int t = 0; t < N; t++)
+                            {
+                                val += tuples[i].df[s][v] * tuples[i].kernel[s, t] / norm;
+                            }
+                            tuples[i].ndf[s][v] = val;
+                        }
+                    }
+                    //compute normalized second derivative
+                    for (int v = 0; v < 2; v++)
+                    {
+                        for (int w = 0; w < 2; w++)
+                        {
+                            for (int s = 0; s < N; s++)
+                            {
+                                double val = 0;
+                                for (int t = 0; t < N; t++)
+                                {
+                                    val += tuples[i].ddf[s][v,w] * tuples[i].kernel[s, t] / norm;
+                                    val -= 3 * tuples[i].df[s][v] * tuples[i].df[s][w] * tuples[i].kernel[s, t] / norm / squaredLength;
+                                }
+                                tuples[i].nddf[s][v,w] = val;
+                            }
+                        }
+                    }
+                }
+            } else { System.Windows.Forms.MessageBox.Show("Not Ready."); }
         }
         protected override void SolveInstance(Grasshopper.Kernel.IGH_DataAccess DA)
         {
@@ -91,8 +196,8 @@ namespace mikity.ghComponents
             var face=brep.Faces[0];
             var domU=face.Domain(0);
             var domV=face.Domain(1);
-            int nPt = 100;
-            int nPt2 = 50;
+            int nPt = 50;
+            int nPt2 = 30;
 
             for (int i = 0; i <= nPt; i++)
             {
@@ -346,6 +451,7 @@ namespace mikity.ghComponents
             }
             n = mesh.Vertices.Count();
             m = mesh.Edges.Count();
+            r = mesh.Triangles.Count();
             int[,] lines = new int[m, 2];
             int _i = 0;
             foreach (var edge in mesh.Edges)

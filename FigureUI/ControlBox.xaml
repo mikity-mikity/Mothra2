@@ -8,7 +8,8 @@
     </Window.Resources>
     <DockPanel Height="Auto" HorizontalAlignment="Stretch" Margin="12" Name="dockPanel1" VerticalAlignment="Stretch" Width="Auto">
         <WrapPanel Height="Auto" Name="wrapPanel1" Width="Auto" DockPanel.Dock="Top">
-            <mm:newButton x:Name="Compute" Text="Compute"></mm:newButton>
+            <mm:newButton x:Name="Compute" Text="Compute base functions"></mm:newButton>
+            <mm:newButton x:Name="Compute2" Text="Compute vector field"></mm:newButton>
         </WrapPanel>
         <StackPanel Height="Auto" Name="stackPanel1" Width="400" HorizontalAlignment="Stretch"></StackPanel>
 

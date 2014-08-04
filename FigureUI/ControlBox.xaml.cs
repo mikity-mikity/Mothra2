@@ -40,6 +40,10 @@ namespace Mothra.UI
         {
             this.Compute.function = func;
         }
+        public void setFunctionToCompute2(Action func)
+        {
+            this.Compute2.function = func;
+        }
         public ControlBox()
         {
             InitializeComponent();
