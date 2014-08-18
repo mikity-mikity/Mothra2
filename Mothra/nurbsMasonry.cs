@@ -275,7 +275,7 @@ namespace mikity.ghComponents
                 }
                 foreach (var tup in tuples)
                 {
-                    myMasonry.elemList[tup.index].precompute(tup);
+                    myMasonry.elemList[tup.ptrElem].precompute(tup);
                 }
 
                 /*for (int i = 0; i < 10; i++)

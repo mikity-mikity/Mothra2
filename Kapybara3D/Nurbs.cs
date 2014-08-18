@@ -10,10 +10,13 @@ namespace Minilla3D.Elements
     {
         public class tuple
         {
-            public int index;  //element index
+            public int ptrElem;  //element index
+            public int[] index;
             public double area;
             int N;
-
+            public double[,][] d2;
+            public double[][] d1;
+            public double[] d0;
             public double ou, ov, u, v;   //scaled coordinate, coordinate on Rhino, local coordinate on an element
             public double[] lo;
             public double[] f;
@@ -74,7 +77,7 @@ namespace Minilla3D.Elements
                 v = _v;
                 lo=new double[2]{_loU,_loV};
 
-                index = _index;
+                ptrElem = _index;
                 area = _area;
                 f = new double[N];
                 df = new double[N][];
@@ -114,13 +117,26 @@ namespace Minilla3D.Elements
             //double[][,] M=new double[2][,];
 		    //M[0]=fM(uNum,_uDim,_uDim-1,uKnot);
 		    //M[1]=fM(vNum,_vDim,_vDim-1,vKnot);
-
+            tup.index = this.index;
             tup.shape = new double[__DIM, nDV];                        //Global coordinate *coefficient*
             tup.C = new double[elemDim, __DIM, nDV];                //Base vectors *coefficient*
             tup.B = new double[elemDim, elemDim, nDV, nDV];          //Metric *coefficient*
             tup.D = new double[elemDim, elemDim, __DIM, nDV];   //Hessian coefficient
-
-			//Shape functions  [N] (for global coordinate)
+            tup.d0 = new double[nDV];
+            tup.d1=new double[elemDim][];
+            tup.d2=new double[elemDim,elemDim][];
+            for (int i = 0; i < elemDim; i++)
+            {
+                tup.d1[i] = new double[nDV];
+            }
+            for (int i = 0; i < elemDim; i++)
+            {
+                for (int j = 0; j < elemDim; j++)
+                {
+                    tup.d2[i, j] = new double[nDV];
+                }
+            }
+            //Shape functions  [N] (for global coordinate)
 			for(int j=0;j<elemDim;j++)
 			{
 				double t=tup.lo[j];
@@ -356,7 +372,7 @@ namespace Minilla3D.Elements
                     }
                 }
             }
-            /*
+            
             //Create gradient of hessian with computed connection coefficients
             for (int m = 0; m < elemDim; m++)
             {
@@ -364,14 +380,26 @@ namespace Minilla3D.Elements
                 {
                     for (int k = 0; k < nNode; k++)
                     {
-                        gradient[m, n][k] = D[m, n, 2, k * __DIM + 2];
-                        for (int i = 0; i < elemDim; i++)
+                        tup.d2[m, n][k] = tup.D[m, n, 2, k * __DIM + 2];
+                        /*for (int i = 0; i < elemDim; i++)
                         {
                             gradient[m, n][k] -= Gamma[m, n, i] * C[i, 2, k * 3 + 2];
-                        }
+                        }*/
                     }
                 }
             }
+            for (int m = 0; m < elemDim; m++)
+            {
+                for (int k = 0; k < nNode; k++)
+                {
+                    tup.d1[m][k] = tup.C[m, 2, k * __DIM + 2];
+                }
+            }
+            for (int k = 0; k < nNode; k++)
+            {
+                tup.d0[k] = tup.shape[2, k * __DIM + 2];
+            }
+            /*
             //Raising index
             double[,] tmp = new double[elemDim, elemDim];
             for (int k = 0; k < nNode; k++)
