@@ -37,6 +37,7 @@ namespace Minilla3D.Elements
         public double[,] hessXY;
         public double[][] eigenVectors;
         public double[] eigenValues;
+        public double[,][] second;
 		double[,] metric;
 		double[,] refMetric;
 		double[,] invMetric;
@@ -81,6 +82,7 @@ namespace Minilla3D.Elements
             globalCoord=new double[__DIM];                  //Global coordinate
             baseVectors = new double[elemDim, __DIM];       //covariant base vectors
             Gamma = new double[elemDim, elemDim, elemDim];  //Connection coefficient
+            second = new double[2, 2][] { { new double[3], new double[3] }, { new double[3], new double[3] } }; //second derivative
             F = new double[elemDim, 2];                    //Transform matrix (u,v)->(x,y)
             f = new double[elemDim, 3];                           //Transform matrix (x,y)->(u,v)
             hessUV = new double[elemDim, elemDim];          //hessian of airy function with respect to uv
@@ -303,6 +305,9 @@ namespace Minilla3D.Elements
                         gx += D[n, m, 0, i] * x[i];
                         gy += D[n, m, 1, i] * x[i];
                     }
+                    second[n, m][0] = gx;
+                    second[n, m][1] = gy;
+                    second[n, m][2] = 0;
                     for (int k = 0; k < elemDim; k++)
                     {
                         Gamma[n, m, k] = gx * F[k, 0] + gy * F[k, 1];

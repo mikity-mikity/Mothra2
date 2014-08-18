@@ -50,6 +50,9 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualC.STLCLR" />
+    <Reference Include="mosekdotnet">
+      <HintPath>DLL\mosekdotnet.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework">
       <Private>False</Private>
@@ -76,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Numerics.cs" />
+    <Compile Include="nurbsInterface.cs" />
     <Compile Include="nurbsMasonry.cs" />
     <Compile Include="GeometryProcessing.cs" />
     <Compile Include="Masonry.cs" />
@@ -202,6 +206,7 @@
 Copy "$(TargetDir)Minilla3D.dll" "$(TargetDir)merge\"
 Copy "$(TargetDir)Mesher.dll" "$(TargetDir)merge\"
 Copy "$(TargetDir)MothraUI.dll" "$(TargetDir)merge\"
+Copy "$(TargetDir)mosek*.*" "$(TargetDir)merge\"
 
 Copy  "$(TargetDir)merge\Mothra.gha"  "c:\users\$(Username)\AppData\Roaming\Grasshopper\Libraries\
 Copy  "$(TargetDir)merge\*.dll"  "c:\users\$(Username)\AppData\Roaming\Grasshopper\Libraries\

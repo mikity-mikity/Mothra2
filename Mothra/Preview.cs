@@ -88,15 +88,37 @@ namespace mikity.ghComponents
             }
             if (a2 != null)
             {
-                args.Display.DrawPoints(a2, Rhino.Display.PointStyle.X, 2, System.Drawing.Color.Blue);
+                args.Display.DrawPoints(a2, Rhino.Display.PointStyle.X, 10, System.Drawing.Color.Blue);
             }
             if (b != null)
             {
                 args.Display.DrawPoints(b, Rhino.Display.PointStyle.ControlPoint, 2, System.Drawing.Color.Orange);
             }
+            if (b2 != null)
+            {
+                args.Display.DrawPoints(b2, Rhino.Display.PointStyle.ControlPoint, 2, System.Drawing.Color.Orange);
+            }
             if (d != null)
             {
                 args.Display.DrawPoints(d, Rhino.Display.PointStyle.Simple, 2, System.Drawing.Color.Brown);
+            }
+            //Integrating Points
+            if (dd2 != null)
+            {
+                args.Display.DrawPoints(dd2, Rhino.Display.PointStyle.X, 8, System.Drawing.Color.Violet);
+            }
+            if (dd != null)
+            {
+                args.Display.DrawPoints(dd, Rhino.Display.PointStyle.ControlPoint, 4, System.Drawing.Color.LimeGreen);
+            }
+            //base vectors
+            if (basis2 != null)
+            {
+                args.Display.DrawLines(basis2, System.Drawing.Color.Red, 4);
+            }
+            if (basis != null)
+            {
+                args.Display.DrawLines(basis, System.Drawing.Color.Blue, 2);
             }
             if (c != null)
             {

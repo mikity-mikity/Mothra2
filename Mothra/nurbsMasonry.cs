@@ -18,50 +18,77 @@ namespace mikity.ghComponents
 {
     public partial class Mothra2 : Grasshopper.Kernel.GH_Component
     {
-        public struct tuple
+        public class tuple_ex:Minilla3D.Elements.nurbsElement.tuple
         {
-            public double u, v;
-            public double area;
-            int N;
-            public double[] f;
-            public double[][] df;
-            public double[][,] ddf;
-            public double[] nf;
-            public double[][] ndf;
-            public double[][,] nddf;
-            public double[,] kernel;
-            public tuple(int _N,double _u,double _v,double _area)
+            public tuple_ex(int _N, double _ou, double _ov, double _u, double _v, int _index, double _loU, double _loV, double _area):base(_N, _ou, _ov, _u,_v,  _index, _loU, _loV, _area)
+            {}
+            
+            public void init(NurbsSurface S,double scaleU,double scaleV)
             {
-                N = _N;
-                u = _u;
-                v = _v;
-                area = _area;
-                f = new double[N];
-                df = new double[N][];
-                ddf = new double[N][,];
-                nf = new double[N];
-                ndf = new double[N][];
-                nddf = new double[N][,];
-                kernel = new double[N, N];
-                for (int i = 0; i < N; i++)
-                {
-                    df[i] = new double[2];
-                    ndf[i] = new double[2];
-                    ddf[i] = new double[2, 2];
-                    nddf[i] = new double[2, 2];
-                }
+                Point3d P;
+                Vector3d[] V;
+                S.Evaluate(u, v, 1, out P, out V);
+                x = P.X;
+                y = P.Y;
+                gi2[0][0] = V[0].X * scaleU;
+                gi2[0][1] = V[0].Y * scaleU;
+                gi2[0][2] = 0;
+                gi2[1][0] = V[1].X * scaleV;
+                gi2[1][1] = V[1].Y * scaleV;
+                gi2[1][2] = 0;
+                gij2[0, 0] = gi2[0][0] * gi2[0][0] + gi2[0][1] * gi2[0][1];
+                gij2[1, 0] = gi2[1][0] * gi2[0][0] + gi2[1][1] * gi2[0][1];
+                gij2[0, 1] = gi2[0][0] * gi2[1][0] + gi2[0][1] * gi2[1][1];
+                gij2[1, 1] = gi2[1][0] * gi2[1][0] + gi2[1][1] * gi2[1][1];
+                double det = gij2[0, 0] * gij2[1, 1] - gij2[0, 1] * gij2[1, 0];
+                Gij2[0, 0] = gij2[1, 1] / det;
+                Gij2[1, 1] = gij2[0, 0] / det;
+                Gij2[0, 1] = -gij2[0, 1] / det;
+                Gij2[1, 0] = -gij2[1, 0] / det;
+                Gi2[0][0]=Gij2[0,0]*gi2[0][0]+Gij2[1,0]*gi2[1][0];
+                Gi2[0][1]=Gij2[0,0]*gi2[0][1]+Gij2[1,0]*gi2[1][1];
+                Gi2[0][2]=0;
+                Gi2[1][0]=Gij2[0,1]*gi2[0][0]+Gij2[1,1]*gi2[1][0];
+                Gi2[1][1]=Gij2[0,1]*gi2[0][1]+Gij2[1,1]*gi2[1][1];
+                Gi2[1][2]=0;
+                S.Evaluate(u, v, 2, out P, out V);
+                second2[0, 0][0] = V[2][0] * scaleU * scaleU;
+                second2[0, 0][1] = V[2][1] * scaleU * scaleU;
+                second2[0, 0][2] = 0;
+                second2[1, 1][0] = V[4][0] * scaleV * scaleV;
+                second2[1, 1][1] = V[4][1] * scaleV * scaleV;
+                second2[1, 1][2] = 0;
+                second2[0, 1][0] = V[3][0] * scaleU * scaleV;
+                second2[0, 1][1] = V[3][1] * scaleU * scaleV;
+                second2[0, 1][2] = 0;
+                second2[1, 0][0] = V[3][0] * scaleV * scaleU;
+                second2[1, 0][1] = V[3][1] * scaleV * scaleU;
+                second2[1, 0][2] = 0;
+                Gammaijk2[0, 0, 0] = second2[0, 0][0] * Gi2[0][0] + second2[0, 0][1] * Gi2[0][1];
+                Gammaijk2[0, 0, 1] = second2[0, 0][0] * Gi2[1][0] + second2[0, 0][1] * Gi2[1][1];
+                Gammaijk2[0, 1, 0] = second2[0, 1][0] * Gi2[0][0] + second2[0, 1][1] * Gi2[0][1];
+                Gammaijk2[0, 1, 1] = second2[0, 1][0] * Gi2[1][0] + second2[0, 1][1] * Gi2[1][1];
+                Gammaijk2[1, 0, 0] = second2[1, 0][0] * Gi2[0][0] + second2[1, 0][1] * Gi2[0][1];
+                Gammaijk2[1, 0, 1] = second2[1, 0][0] * Gi2[1][0] + second2[1, 0][1] * Gi2[1][1];
+                Gammaijk2[1, 1, 0] = second2[1, 1][0] * Gi2[0][0] + second2[1, 1][1] * Gi2[0][1];
+                Gammaijk2[1, 1, 1] = second2[1, 1][0] * Gi2[1][0] + second2[1, 1][1] * Gi2[1][1];
             }
         }
         ControlBox myControlBox = new ControlBox();
-
+        NurbsSurface flatSurface;
         List<Point3d> a;
         List<Point3d> a2;
         List<Point3d> b;
+        List<Point3d> b2;
         List<Curve> c;
         List<Point3d> d;
         List<Point3d> d2;
         List<Line> f;
         List<Point3d> g;
+        List<Point3d> dd;
+        List<Point3d> dd2;
+        List<Line> basis;
+        List<Line> basis2;
         List<Line>[] boundaries;
         List<Line>[] holes;
         List<Line> result;
@@ -75,23 +102,34 @@ namespace mikity.ghComponents
         List<Mesher.Geometry.Edge>[] bbOut;
         List<Mesher.Geometry.Edge>[] bbIn;
         int n, m, r;  //Number of vertices, edges and triangles.
+        int nU, nV;
+        int nUelem;
+        int nVelem;
+        double scaleU, scaleV,originU,originV;
+        Interval domU, domV;
+        
+        Minilla3D.Objects.masonry myMasonry;
 
         Mesher.Data.Vertex[] vertices;
         Mesher.Geometry.Edge[] edges;
         Mesher.Data.Triangle[] triangles;
-        tuple[] tuples;
+        tuple_ex[] tuples;
         List<int> fixedPoints;
-            
         private void init()
         {
             a = new List<Point3d>();
             a2 = new List<Point3d>();
             b = new List<Point3d>();
+            b2 = new List<Point3d>();
             c = new List<Curve>();
             d = new List<Point3d>();
             d2 = new List<Point3d>();
             f = new List<Line>();
             g = new List<Point3d>();
+            dd = new List<Point3d>();
+            dd2 = new List<Point3d>();
+            basis = new List<Line>();
+            basis2 = new List<Line>();
             lastComputed = -1;
         }
         public Mothra2()
@@ -119,7 +157,7 @@ namespace mikity.ghComponents
         {
             if (lastComputed == nInnerLoops + nOutterSegments - 1) {
                 int N=nInnerLoops+nOutterSegments;
-                tuples = new tuple[r];
+                tuples = new tuple_ex[r];
                 for(int i=0;i<r;i++)
                 {
                     var tri = triangles[i];
@@ -128,7 +166,16 @@ namespace mikity.ghComponents
                     var C = tri.GetVertex(2);
                     double centerU = (A.X + B.X + C.X) / 3d;
                     double centerV = (A.Y + B.Y + C.Y) / 3d;
-                    tuples[i] = new tuple(nInnerLoops + nOutterSegments, centerU, centerV,tri.Area);
+                    //element index
+                    int uNum = (int)centerU;
+                    int vNum = (int)centerV;
+                    int index = uNum + vNum * nUelem;
+                    //local coordinates
+                    double localU = centerU - uNum;
+                    double localV = centerV - vNum;
+
+                    tuples[i] = new tuple_ex(nInnerLoops + nOutterSegments, centerU,centerV,centerU*scaleU+originU, centerV*scaleV+originV,index,localU,localV,tri.Area);
+                    tuples[i].init(flatSurface,scaleU,scaleV);
                     for(int s=0;s<N;s++)
                     {
                         tuples[i].f[s] = Function[s](centerU, centerV);
@@ -186,7 +233,146 @@ namespace mikity.ghComponents
                         }
                     }
                 }
-            } else { System.Windows.Forms.MessageBox.Show("Not Ready."); }
+                createNurbsElements(flatSurface);
+                double[,] x;
+                x = new double[nU * nV, 3];
+                Nurbs2x(flatSurface, x);
+                myMasonry.setupNodesFromList(x);
+                myMasonry.computeGlobalCoord();
+                foreach (var e in myMasonry.elemList)
+                {
+                    var P = e.getIntPoint(0);
+                    var Q = e.getIntPoint(1);
+                    var R = e.getIntPoint(2);
+                    var W = e.getIntPoint(3);
+                    dd.Add(new Point3d(P[0], P[1], P[2]));
+                    dd.Add(new Point3d(Q[0], Q[1], Q[2]));
+                    dd.Add(new Point3d(R[0], R[1], R[2]));
+                    dd.Add(new Point3d(W[0], W[1], W[2]));
+                }
+                basis.Clear();
+                foreach (var e in myMasonry.elemList)
+                {
+                    e.precompute();
+                    e.computeBaseVectors();
+                    double[][] gi = new double[2][] { new double[3], new double[3] };
+                    e.getBaseVectors(0, ref gi);
+                    var P = e.getIntPoint(0);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    e.getBaseVectors(1, ref gi);
+                    P = e.getIntPoint(1);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    e.getBaseVectors(2, ref gi);
+                    P = e.getIntPoint(2);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    e.getBaseVectors(3, ref gi);
+                    P = e.getIntPoint(3);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                }
+                foreach (var tup in tuples)
+                {
+                    myMasonry.elemList[tup.index].precompute(tup);
+                }
+
+                /*for (int i = 0; i < 10; i++)
+                {
+                    System.Windows.Forms.MessageBox.Show((tuples[i].Gammaijk[0, 1, 0]).ToString("g"));
+                    System.Windows.Forms.MessageBox.Show((tuples[i].Gammaijk2[0, 1, 0]).ToString("g"));
+                }*/
+                /*
+                List<tuple> anotherTuples = new List<tuple>();
+                dd2.Clear();
+                for (int j = 0; j < nVelem; j++)
+                {
+                    for (int i = 0; i < nUelem; i++)
+                    {
+                        Point3d P;
+                        double u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.3);
+                        double v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.3);
+                        anotherTuples.Add(new tuple(nInnerLoops + nOutterSegments, u, v, 0.25));
+
+                        P=flatSurface.PointAt(u, v);
+                        dd2.Add(P);
+                        u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.7);
+                        v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.3);
+                        anotherTuples.Add(new tuple(nInnerLoops + nOutterSegments, u, v, 0.25));
+                        P = flatSurface.PointAt(u, v);
+                        dd2.Add(P);
+                        u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.3);
+                        v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.7);
+                        anotherTuples.Add(new tuple(nInnerLoops + nOutterSegments, u, v, 0.25));
+                        P = flatSurface.PointAt(u, v);
+                        dd2.Add(P);
+                        u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.7);
+                        v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.7);
+                        anotherTuples.Add(new tuple(nInnerLoops + nOutterSegments, u, v, 0.25));
+                        P = flatSurface.PointAt(u, v);
+                        dd2.Add(P);
+                    }
+                }
+                basis2.Clear();
+                foreach (var v in anotherTuples)
+                {
+                    v.init(flatSurface, scaleU, scaleV);
+                    basis2.Add(new Line(new Point3d(v.x, v.y, 0), new Point3d(v.x + v.gi[0][0], v.y + v.gi[0][1], 0)));
+                    basis2.Add(new Line(new Point3d(v.x, v.y, 0), new Point3d(v.x + v.gi[1][0], v.y + v.gi[1][1], 0)));
+                }
+                List<double[, ,]> gijk = new List<double[, ,]>();
+                basis.Clear();
+                foreach (var e in myMasonry.elemList)
+                {
+                    e.precompute();
+                    e.computeBaseVectors();
+                    double[][] gi=new double[2][]{new double[3],new double[3]};
+                    e.getBaseVectors(0, ref gi);
+                    var P=e.getIntPoint(0);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    e.getBaseVectors(1, ref gi);
+                    P = e.getIntPoint(1);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    e.getBaseVectors(2, ref gi);
+                    P = e.getIntPoint(2);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    e.getBaseVectors(3, ref gi);
+                    P = e.getIntPoint(3);
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[0][0], P[1] + gi[0][1], 0)));
+                    basis.Add(new Line(new Point3d(P[0], P[1], 0), new Point3d(P[0] + gi[1][0], P[1] + gi[1][1], 0)));
+                    double[, ,] g = new double[2, 2, 2];
+                    e.getConnectionCoeff(0, ref g);
+                    gijk.Add(g);
+                    g = new double[2, 2, 2];
+                    e.getConnectionCoeff(1, ref g);
+                    gijk.Add(g);
+                    g = new double[2, 2, 2];
+                    e.getConnectionCoeff(2, ref g);
+                    gijk.Add(g);
+                    g = new double[2, 2, 2];
+                    e.getConnectionCoeff(3, ref g);
+                    gijk.Add(g);
+                    g = new double[2, 2, 2];
+                }
+                //Check Gammaijk...
+                if (anotherTuples.Count == gijk.Count)
+                {
+                    System.Windows.Forms.MessageBox.Show("OK");
+                    for (int i = 0; i < 10; i++)
+                    {
+                        System.Windows.Forms.MessageBox.Show((anotherTuples[i].Gammaijk[0, 1, 0]).ToString("g"));
+                        System.Windows.Forms.MessageBox.Show((gijk[i][0, 1, 0]).ToString("g"));
+                    }
+                }
+                else
+                {
+                    System.Windows.Forms.MessageBox.Show("Bad");
+                }*/
+            } else { System.Windows.Forms.MessageBox.Show("Not Ready.");}
         }
         protected override void SolveInstance(Grasshopper.Kernel.IGH_DataAccess DA)
         {
@@ -194,11 +380,46 @@ namespace mikity.ghComponents
             init();
             if (!DA.GetData(0, ref brep)) { return; }
             var face=brep.Faces[0];
-            var domU=face.Domain(0);
-            var domV=face.Domain(1);
+            flatSurface = brep.Faces[0].ToNurbsSurface();
+            nU = flatSurface.Points.CountU;
+            nV = flatSurface.Points.CountV;
+            domU = face.Domain(0);
+            domV=face.Domain(1);
+            int uDim = flatSurface.OrderU;
+            int vDim = flatSurface.OrderV;
+            int uDdim = flatSurface.OrderU - 1;
+            int vDdim = flatSurface.OrderV - 1;
+            nUelem=nU - uDdim;
+            nVelem=nV - vDdim;
+            scaleU = (domU.T1 - domU.T0) / nUelem;
+            scaleV = (domV.T1 - domV.T0) / nVelem;
+            originU = domU.T0;
+            originV = domV.T0;
+            for (int i = 0; i < nUelem; i++)
+            {
+                for (int j = 0; j < nVelem; j++)
+                {
+                    Point3d P;
+                    double u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.3);
+                    double v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.3);
+                    P = face.PointAt(u, v);
+                    dd2.Add(P);
+                    u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.7);
+                    v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.3);
+                    P = face.PointAt(u, v);
+                    dd2.Add(P);
+                    u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.3);
+                    v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.7);
+                    P = face.PointAt(u, v);
+                    dd2.Add(P);
+                    u = domU.T0 + (domU.T1 - domU.T0) / nUelem * (i + 0.7);
+                    v = domV.T0 + (domV.T1 - domV.T0) / nVelem * (j + 0.7);
+                    P = face.PointAt(u, v);
+                    dd2.Add(P);
+                }
+            }
             int nPt = 50;
             int nPt2 = 30;
-
             for (int i = 0; i <= nPt; i++)
             {
                 double u = domU[0] + (domU[1] - domU[0]) / ((double)nPt) * i;
@@ -254,11 +475,12 @@ namespace mikity.ghComponents
                     if (flagU && flagV)
                     {
                         a.Add(P);
-                        a2.Add(new Point3d(u, v, 0));
+                        a2.Add(new Point3d(u / scaleU - originU / scaleU, v / scaleV - originV / scaleV, 0));
                     }
                     else
                     {
                         b.Add(P);
+                        b2.Add(new Point3d(u / scaleU - originU / scaleU, v / scaleV - originV / scaleV, 0));
                     }
                 }
             }
@@ -287,10 +509,10 @@ namespace mikity.ghComponents
                             var P2D=edge2D.PointAt(t);
                             var P3D=face.PointAt(P2D.X,P2D.Y);
                             d.Add(P3D);
-                            d2.Add(P2D);
+                            d2.Add(new Point3d(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV, 0));
                             if (_t == nPt2-1 && s == edges3D.SegmentCount - 1)
                             {
-                                input.AddPoint(P2D.X, P2D.Y);
+                                input.AddPoint(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV);
                                 N++;
                                 input.AddSegment(N - 1, tmpN,s+1);
                             }
@@ -298,11 +520,11 @@ namespace mikity.ghComponents
                             {
                                 if (_t == 0)
                                 {
-                                    input.AddPoint(P2D.X, P2D.Y);
+                                    input.AddPoint(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV);
                                 }
                                 else
                                 {
-                                    input.AddPoint(P2D.X, P2D.Y);
+                                    input.AddPoint(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV);
                                 }
                                 N++;
                                 input.AddSegment(N - 1, N,s+1);
@@ -324,17 +546,17 @@ namespace mikity.ghComponents
                         var P2D = edges2D.PointAt(t);
                         var P3D = face.PointAt(P2D.X, P2D.Y);
                         d.Add(P3D);
-                        d2.Add(P2D);
+                        d2.Add(new Point3d(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV, 0));
                         if (_t < nPt2-1)
                         {
-                            input.AddPoint(P2D.X, P2D.Y);
+                            input.AddPoint(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV);
                             center += P2D;
                             N++;
                             input.AddSegment(N - 1, N,ss);
                         }
                         else if(_t==nPt2-1)
                         {
-                            input.AddPoint(P2D.X, P2D.Y);
+                            input.AddPoint(P2D.X / scaleU - originU / scaleU, P2D.Y / scaleV - originV / scaleV);
                             center += P2D;
                             N++;
                             input.AddSegment(N - 1, tmpN,ss);
@@ -342,7 +564,7 @@ namespace mikity.ghComponents
                     }
                     ss++;
                     center /= nPt2;
-                    input.AddHole(center.X, center.Y);
+                    input.AddHole(center.X / scaleU - originU / scaleU, center.Y / scaleV - originV / scaleV);
                     tmpN = N;
                 }
             }

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Minilla3D.Elements
 {
-    
     public class element
 	{
         enum type{
@@ -77,6 +76,31 @@ namespace Minilla3D.Elements
 		{
             Array.Copy(_index,index,nNode);
 		}
+        public void getConnectionCoeff(int i,ref double[,,] _Gamma)
+        {
+            for (int s = 0; s < 2; s++)
+            {
+                for (int t = 0; t < 2; t++)
+                {
+                    for (int u = 0; u < 2; u++)
+                    {
+                        _Gamma[s, t, u] = this.intP[i].Gamma[s, t, u];
+                    }
+                }
+            }
+        }
+        public void getBaseVectors(int i, ref double[][] b)
+        {
+            b[0][0] = this.intP[i].baseVectors[0, 0];
+            b[0][1] = this.intP[i].baseVectors[0, 1];
+            b[0][2] = this.intP[i].baseVectors[0, 2];
+            b[1][0] = this.intP[i].baseVectors[1, 0];
+            b[1][1] = this.intP[i].baseVectors[1, 1];
+            b[1][2] = this.intP[i].baseVectors[1, 2];
+            ///intP[i].f is equivalent to intP[i].baseVectors
+            ///intP[i].f is computed in precompute()
+            ///intP[i].baseVectos is computed i computeBaseVectors()
+        }
         public double[] getNode(int i)
 		{
 			return new double[3]{node[i*__DIM+0],node[i*__DIM+1],node[i*__DIM+2]};
